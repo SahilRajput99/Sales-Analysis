@@ -47,8 +47,7 @@ Description: Contains data about the shipping methods used in the sales transact
 
 ### SQL Queries:
 1. Total Sales Analysis
-
---Monthly sales
+#### Monthly sales
 Select sum(Total) as Totalsales
 FROM RB_Project.dbo.Fact_Sales
 Group By Month(RB_Project.dbo.Fact_Sales.New_Created_at)
