@@ -83,5 +83,58 @@ GROUP BY
 ORDER BY 
     YEAR(New_Created_at), MONTH(New_Created_at);
 
+### SQL Queries:
+1. #### Total Sales Analysis
+
+#### Monthly sales
+
+Select sum(Total) as Totalsales
+FROM RB_Project.dbo.Fact_Sales
+Group By Month(RB_Project.dbo.Fact_Sales.New_Created_at)
+
+
+![Monthly_Sales](https://github.com/user-attachments/assets/aba4c462-0e46-4745-be39-ec3a7739d53f)
+
+ #### Sales By Year
+
+ Select sum(total) as totalsales
+ from RB_Project.dbo.Fact_Sales
+ Group By YEAR(RB_Project.dbo.Fact_Sales.New_Created_at)
+
+ ![sales year](https://github.com/user-attachments/assets/cac23978-2549-40ef-9342-4577778dbe04)
+
+ #### Calculate the total sales for each respective month
+
+Select sum(total) as totalsales, Month(RB_Project.dbo.Fact_Sales.New_Created_at) as Monthlysales, Year(RB_Project.dbo.Fact_Sales.New_Created_at) as Yearlysales
+ from RB_Project.dbo.Fact_Sales
+ Group By 
+ Month(RB_Project.dbo.Fact_Sales.New_Created_at),
+ Year(RB_Project.dbo.Fact_Sales.New_Created_at)
+ Order By
+ Yearlysales,
+ Monthlysales asc;
+
+ ![Totalsales by month and year](https://github.com/user-attachments/assets/a50cfa59-dbcb-4282-8e10-0582e0ddbb56)
+
+ #### Calculate the month on month increase or decrease in sales & Difference in sales in % between the selected month and previous month
+
+ SELECT 
+    YEAR(New_Created_at) AS SalesYear,
+    MONTH(New_Created_at) AS SalesMonth,
+    ROUND(SUM(Total), 0) AS TotalSales,
+    ((SUM(Total) - LAG(SUM(Total), 1) OVER (ORDER BY YEAR(New_Created_at), MONTH(New_Created_at))) 
+        / LAG(SUM(Total), 1) OVER (ORDER BY YEAR(New_Created_at), MONTH(New_Created_at))) * 100 
+        AS MOM_Increase_Percentage
+FROM 
+    RB_Project.dbo.Fact_Sales
+GROUP BY 
+    YEAR(New_Created_at), MONTH(New_Created_at)
+ORDER BY 
+    YEAR(New_Created_at), MONTH(New_Created_at);
+
+![MOM % sales](https://github.com/user-attachments/assets/5c13a89b-8da9-4b0a-9e84-47ec1a59080b)
+
+
+
 
 
