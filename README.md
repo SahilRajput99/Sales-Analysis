@@ -196,11 +196,80 @@ ORDER BY
 ![MOM quanities sold](https://github.com/user-attachments/assets/0c9a54cc-ea6c-4a66-8663-f115a84973aa)
 
 ### Detailed Metrics i,e.,(Sales, Qty Sold, Orders) of any specific date
-
+```sql
 SELECT SUM(Total) as Totalsales,
 	SUM(Lineitem_quantity) as Total_Qty_Sold,
 		count(distinct Name) as Totalorders
 	From RB_Project.dbo.Fact_Sales
 Where
 Cast(New_Created_at as Date) = '2023-08-18';
+```
 
+![Detailed metrics by specific date](https://github.com/user-attachments/assets/f36fb1a8-fffe-47ac-bfb4-4cde8f398a94)
+
+#### Sales  by Weekdays and Weekends
+```sql
+SELECT
+	CASE WHEN DATEPART(WEEKDAY, RB_Project.dbo.Fact_Sales.New_Created_at) IN (1,7) THEN 'Weekends'
+	Else 'Weekdays'
+	End AS DAY_TIME,
+	Concat(Round(sum(total)/1000,1),'K') as Totalsales
+from RB_Project.dbo.Fact_Sales
+	WHERE MONTH(RB_Project.dbo.Fact_Sales.New_Created_at) = 2 AND Year(RB_Project.dbo.Fact_Sales.New_Created_at) = '2023'
+	Group BY
+	CASE WHEN DATEPART(WEEKDAY, RB_Project.dbo.Fact_Sales.New_Created_at) IN (1,7) THEN 'Weekends'
+	Else 'Weekdays'
+	End;
+```
+
+![Sales by weekday-weekends](https://github.com/user-attachments/assets/a040bad3-e3d7-4362-820b-defb34f64696)
+
+#### Sales by Location
+```sql
+SELECT Billing_City, CONCAT(ROUND(sum(total)/1000,1), 'K')  as totalsales
+from RB_Project.dbo.Fact_Sales
+Where MONTH(RB_Project.dbo.Fact_Sales.New_Created_at) = 2 AND Year(RB_Project.dbo.Fact_Sales.New_Created_at) = '2024'
+Group BY Billing_City
+Order by totalsales desc;
+```
+
+![sales by location](https://github.com/user-attachments/assets/d0291842-98d7-4737-906a-797202e4d1fe)
+
+#### Daily sales Analysis with Average Line
+
+```sql
+WITH DailySales AS (
+    SELECT 
+        DAY(New_Created_at) AS day_of_the_month,
+        SUM(Total) AS TotalSales
+    FROM 
+        RB_Project.dbo.Fact_Sales
+    WHERE 
+        MONTH(New_Created_at) = 1
+        AND YEAR(New_Created_at) = 2024
+    GROUP BY 
+        DAY(New_Created_at)
+),
+AvgSales AS (
+    SELECT 
+        AVG(TotalSales) AS AvgSales
+    FROM 
+        DailySales
+)
+SELECT 
+    DS.day_of_the_month,
+    CASE 
+        WHEN DS.TotalSales > ASales.AvgSales THEN 'Above Average'
+        WHEN DS.TotalSales < ASales.AvgSales THEN 'Below Average'
+        ELSE 'Average'
+    END AS sales_status,
+    DS.TotalSales
+FROM 
+    DailySales DS
+CROSS JOIN 
+    AvgSales ASales
+ORDER BY 
+    DS.day_of_the_month;
+```
+
+![Totalsales status](https://github.com/user-attachments/assets/797263b2-2e9e-4fd4-a35d-b9cc1cf2e0dd)
