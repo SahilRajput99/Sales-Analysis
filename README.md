@@ -273,3 +273,270 @@ ORDER BY
 ```
 
 ![Totalsales status](https://github.com/user-attachments/assets/797263b2-2e9e-4fd4-a35d-b9cc1cf2e0dd)
+
+#### Sales anlaysis by shipping
+```sql
+SELECT shipping_Type, Sum(fs.Total) as Totalsales
+From RB_Project.dbo.Fact_Sales fs
+Join RB_Project.dbo.Shipping_Info SI ON
+fs.Shipping_Method = SI.Shipping_Method
+Where MONTH(fs.New_Created_at) = 1 And
+Year(fs.New_Created_at) = '2024'
+Group BY SI.Shipping_Type
+Order BY Totalsales Desc;
+```
+
+![Sales by Shipping](https://github.com/user-attachments/assets/ba8bfe35-2cdf-4d4b-b147-248fc94377bf)
+
+#### TOP 10 VENDORS
+```sql
+SELECT Vendor, SUM(Total) as Totalsales
+From RB_Project.dbo.Fact_Sales
+Where Month(RB_Project.dbo.Fact_Sales.New_Created_at) = 1 and
+	YEAR(RB_Project.dbo.Fact_Sales.New_Created_at) = '2024'
+Group By Vendor
+Order By Totalsales desc
+offset 0 rows FETCH NEXT 10 ROWS ONLY;
+```
+
+![Top 10 Vendors](https://github.com/user-attachments/assets/043ca556-8deb-4406-bcd1-d5c04cb5ad49)
+
+#### Sales Analysis By Days and Hours
+```sql
+select SUM(Total) as totalsales,
+sum(Lineitem_quantity) as Total_Qty_Sold,
+count(distinct Name) as Totalorders
+From RB_Project.dbo.Fact_Sales
+Where YEAR(RB_Project.dbo.Fact_Sales.New_Created_at) = '2024' --Targeted Year
+	AND MONTH(RB_Project.dbo.Fact_Sales.New_Created_at) = 1 -- January
+	AND DATEPART(Weekday, RB_Project.dbo.Fact_Sales.New_Created_at) = 2 -- Monday
+	AND DATEPART(HOUR, RB_Project.dbo.Fact_Sales.New_Created_at) = 8; --Hour
+```
+
+![Sales by Day](https://github.com/user-attachments/assets/f2de8bdb-c5d9-4d88-a3f2-b7ac5e001049)
+
+#### Sales By Hours
+```sql
+Select Concat(Round(SUM(Total)/1000000,2), 'M') as totalsales, DATEPART(Hour, RB_Project.dbo.Fact_Sales.New_Created_at) AS Hours
+From RB_Project.dbo.Fact_Sales
+Where YEAR(RB_Project.dbo.Fact_Sales.New_Created_at) = '2024' --Targeted Year
+	AND MONTH(RB_Project.dbo.Fact_Sales.New_Created_at) = 1 -- January
+Group BY DATEPART(Hour, RB_Project.dbo.Fact_Sales.New_Created_at);
+```
+
+![sales by hour](https://github.com/user-attachments/assets/ea628449-1862-4424-860c-5c6f21374f93)
+
+#### Sales By Week Days
+```sql
+SELECT
+	CASE
+	WHEN DATEPART(WEEKDAY, RB_Project.dbo.Fact_Sales.New_Created_at) = 2 THEN 'Monday'
+	WHEN DATEPART(WEEKDAY, RB_Project.dbo.Fact_Sales.New_Created_at) = 3 THEN 'Tuesday'
+	WHEN DATEPART(WEEKDAY, RB_Project.dbo.Fact_Sales.New_Created_at) = 4 THEN 'Wednesday'
+	WHEN DATEPART(WEEKDAY, RB_Project.dbo.Fact_Sales.New_Created_at) = 5 THEN 'Thursday'
+	WHEN DATEPART(WEEKDAY, RB_Project.dbo.Fact_Sales.New_Created_at) = 6 THEN 'Friday'
+	WHEN DATEPART(WEEKDAY, RB_Project.dbo.Fact_Sales.New_Created_at) = 7 THEN 'Saturday'
+	Else 'Sunday'
+	End As day_of_week,
+	Sum(total) as Totalsales
+FROM RB_Project.dbo.Fact_Sales
+WHERE YEAR(RB_Project.dbo.Fact_Sales.New_Created_at) = '2024' --Targeted Year
+	AND MONTH(RB_Project.dbo.Fact_Sales.New_Created_at) = 1
+Group By 
+	CASE
+	WHEN DATEPART(WEEKDAY, RB_Project.dbo.Fact_Sales.New_Created_at) = 2 THEN 'Monday'
+	WHEN DATEPART(WEEKDAY, RB_Project.dbo.Fact_Sales.New_Created_at) = 3 THEN 'Tuesday'
+	WHEN DATEPART(WEEKDAY, RB_Project.dbo.Fact_Sales.New_Created_at) = 4 THEN 'Wednesday'
+	WHEN DATEPART(WEEKDAY, RB_Project.dbo.Fact_Sales.New_Created_at) = 5 THEN 'Thursday'
+	WHEN DATEPART(WEEKDAY, RB_Project.dbo.Fact_Sales.New_Created_at) = 6 THEN 'Friday'
+	WHEN DATEPART(WEEKDAY, RB_Project.dbo.Fact_Sales.New_Created_at) = 7 THEN 'Saturday'
+	Else 'Sunday'
+	End;
+```
+
+![sales by week](https://github.com/user-attachments/assets/0ef23a65-6083-405f-b6d4-a609398d6869)
+
+#### Customer Segmentation Analysis
+```sql
+Select Cs.Customer_ID,
+		DATEDIFF(DAY, MAX(FS.CreatedAt), GETDATE()) AS Recency,
+		COUNT(Distinct OrderID) as Frequency,  ---- Count of OrderIds
+		sum(total) as Monetary
+		From RB_Project.dbo.ConsolidatedOrders FS
+Join RB_Project.dbo.UCustomers Cs ON
+	FS.Email = Cs.Email
+Group By Cs.Customer_ID
+Order By Monetary desc;
+```
+
+![customer segmentation analysis](https://github.com/user-attachments/assets/77038b24-bac4-4e31-8d64-89f903cd2b69)
+
+#### Customer Lifetime Value (CLV) Prediction
+-- Step 1: Calculate Recency (R), Frequency (F), and Monetary (M) for each customer
+```sql
+WITH RFM AS (
+    SELECT 
+        Customer_ID,
+        DATEDIFF(DAY, MAX(CreatedAt), GETDATE()) AS Recency,    -- Days since last purchase
+        COUNT(OrderID) AS Frequency,                             -- Total number of purchases
+        SUM(Total) AS Monetary                              -- Total money spent
+    FROM ConsolidatedOrders
+    GROUP BY Customer_ID
+),
+```
+
+-- Step 2: Assign RFM Segments
+
+```sql
+RFM_Segments AS (
+    SELECT 
+        Customer_ID,
+        Recency,
+        Frequency,
+        Monetary,
+        CASE 
+            WHEN Recency <= 30 THEN 'High'
+            WHEN Recency <= 60 THEN 'Medium'
+            ELSE 'Low'
+        END AS Recency_Segment,
+        CASE 
+            WHEN Frequency >= 10 THEN 'High'
+            WHEN Frequency BETWEEN 5 AND 9 THEN 'Medium'
+            ELSE 'Low'
+        END AS Frequency_Segment,
+        CASE 
+            WHEN Monetary >= 1000 THEN 'High'
+            WHEN Monetary BETWEEN 500 AND 999 THEN 'Medium'
+            ELSE 'Low'
+        END AS Monetary_Segment
+    FROM RFM
+),
+```
+
+-- Step 3: Calculate CLV (Simplified approach using a weighted score)
+
+```sql
+CLV_Prediction AS (
+    SELECT 
+        Customer_ID,
+        Recency_Segment,
+        Frequency_Segment,
+        Monetary_Segment,
+        -- Use a weighted formula for CLV based on RFM segments
+        CASE 
+            WHEN Recency_Segment = 'High' THEN 3
+            WHEN Recency_Segment = 'Medium' THEN 2
+            ELSE 1
+        END * 
+        CASE 
+            WHEN Frequency_Segment = 'High' THEN 3
+            WHEN Frequency_Segment = 'Medium' THEN 2
+            ELSE 1
+        END *
+        CASE 
+            WHEN Monetary_Segment = 'High' THEN 3
+            WHEN Monetary_Segment = 'Medium' THEN 2
+            ELSE 1
+        END AS CLV_Score
+    FROM RFM_Segments
+)
+```
+
+-- Final Output: List of Customers with CLV Prediction
+
+```sql
+SELECT 
+    Customer_ID,
+    Recency_Segment,
+    Frequency_Segment,
+    Monetary_Segment,
+    CLV_Score
+FROM CLV_Prediction
+ORDER BY CLV_Score DESC;
+```
+![CLV](https://github.com/user-attachments/assets/8a719a51-0986-460f-b75e-9cfeaf28a063)
+
+#### Cohort Analysis
+
+-- Step 1: Identify the first purchase date for each customer
+
+```sql
+WITH FirstPurchase AS (
+    SELECT 
+        Customer_ID,
+        MIN(CAST(CreatedAt AS DATE)) AS First_Purchase_Date
+    FROM 
+        ConsolidatedOrders
+    GROUP BY 
+        Customer_ID
+),
+```
+
+-- Step 2: Group customers by the month and year of their first purchase
+
+```sql
+CustomerCohorts AS (
+    SELECT 
+        Customer_ID,
+        FORMAT(First_Purchase_Date, 'yyyy-MM') AS First_Purchase_Month
+    FROM 
+        FirstPurchase
+),
+```
+
+-- Step 3: Analyze customer behavior over time
+
+```sql
+CustomerBehavior AS (
+    SELECT 
+        c.First_Purchase_Month,
+        o.Customer_ID,
+        FORMAT(o.CreatedAt, 'yyyy-MM') AS Purchase_Month,
+        SUM(o.Total) AS Monthly_Spend
+    FROM 
+        ConsolidatedOrders o
+    JOIN 
+        CustomerCohorts c ON o.Customer_ID = c.Customer_ID
+    GROUP BY 
+        c.First_Purchase_Month, 
+        o.Customer_ID, 
+        FORMAT(o.CreatedAt, 'yyyy-MM')
+),
+```
+
+-- Step 4: Aggregate CLV and behavior over time by cohort
+
+```sql
+CohortAnalysis AS (
+    SELECT 
+        First_Purchase_Month,
+        Purchase_Month,
+        COUNT(DISTINCT Customer_ID) AS Active_Customers,
+        SUM(Monthly_Spend) AS Total_Revenue,
+        AVG(SUM(Monthly_Spend)) OVER (PARTITION BY First_Purchase_Month) AS Average_CLV
+    FROM 
+        CustomerBehavior
+    GROUP BY 
+        First_Purchase_Month, 
+        Purchase_Month
+)
+```
+
+-- Final Step: Display cohort analysis
+
+```sql
+SELECT 
+    First_Purchase_Month,
+    Purchase_Month,
+    Active_Customers,
+    Total_Revenue,
+    Average_CLV
+FROM 
+    CohortAnalysis
+ORDER BY 
+    First_Purchase_Month, 
+    Purchase_Month;
+```
+
+![Cohort analysis](https://github.com/user-attachments/assets/c68ddeaf-94a9-442b-a43c-b790a0b37640)
+
