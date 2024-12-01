@@ -46,49 +46,14 @@ Description: Contains information related to customer orders, such as order ID a
 Description: Contains data about the shipping methods used in the sales transactions.
 
 ### SQL Queries:
-1. Total Sales Analysis
-#### Monthly sales
-Select sum(Total) as Totalsales
-FROM RB_Project.dbo.Fact_Sales
-Group By Month(RB_Project.dbo.Fact_Sales.New_Created_at)
-
- --Sales By Year
- Select sum(total) as totalsales
- from RB_Project.dbo.Fact_Sales
- Group By YEAR(RB_Project.dbo.Fact_Sales.New_Created_at)
-
- --Calculate the toal sales for each respective month
-  Select sum(total) as totalsales, Month(RB_Project.dbo.Fact_Sales.New_Created_at) as Monthlysales, Year(RB_Project.dbo.Fact_Sales.New_Created_at) as Yearlysales
- from RB_Project.dbo.Fact_Sales
- Group By 
- Month(RB_Project.dbo.Fact_Sales.New_Created_at),
- Year(RB_Project.dbo.Fact_Sales.New_Created_at)
- Order By
- Yearlysales,
- Monthlysales asc;
-
- -- Calculate the month on month increase or decrease in sales & Difference in sales in % between the selected month and previous month
- SELECT 
-    YEAR(New_Created_at) AS SalesYear,
-    MONTH(New_Created_at) AS SalesMonth,
-    ROUND(SUM(Total), 0) AS TotalSales,
-    ((SUM(Total) - LAG(SUM(Total), 1) OVER (ORDER BY YEAR(New_Created_at), MONTH(New_Created_at))) 
-        / LAG(SUM(Total), 1) OVER (ORDER BY YEAR(New_Created_at), MONTH(New_Created_at))) * 100 
-        AS MOM_Increase_Percentage
-FROM 
-    RB_Project.dbo.Fact_Sales
-GROUP BY 
-    YEAR(New_Created_at), MONTH(New_Created_at)
-ORDER BY 
-    YEAR(New_Created_at), MONTH(New_Created_at);
-
-### SQL Queries:
 1. #### Total Sales Analysis
 
 #### Monthly sales
 
 Select sum(Total) as Totalsales
+
 FROM RB_Project.dbo.Fact_Sales
+
 Group By Month(RB_Project.dbo.Fact_Sales.New_Created_at)
 
 
