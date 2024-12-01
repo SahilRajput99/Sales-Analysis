@@ -59,32 +59,27 @@ GROUP BY MONTH(RB_Project.dbo.Fact_Sales.New_Created_at);
 ![Monthly_Sales](https://github.com/user-attachments/assets/aba4c462-0e46-4745-be39-ec3a7739d53f)
 
  #### Sales By Year
-
- Select sum(total) as totalsales
- 
- from RB_Project.dbo.Fact_Sales
- 
- Group By YEAR(RB_Project.dbo.Fact_Sales.New_Created_at)
+```sql
+SELECT SUM(total) AS totalsales
+FROM RB_Project.dbo.Fact_Sales
+GROUP BY YEAR(RB_Project.dbo.Fact_Sales.New_Created_at);
+```
 
  ![sales year](https://github.com/user-attachments/assets/cac23978-2549-40ef-9342-4577778dbe04)
 
  #### Calculate the total sales for each respective month
-
-Select sum(total) as totalsales, Month(RB_Project.dbo.Fact_Sales.New_Created_at) as Monthlysales, Year(RB_Project.dbo.Fact_Sales.New_Created_at) as Yearlysales
- 
- from RB_Project.dbo.Fact_Sales
- 
- Group By 
-
- Month(RB_Project.dbo.Fact_Sales.New_Created_at),
- 
- Year(RB_Project.dbo.Fact_Sales.New_Created_at)
-
- Order By
-
- Yearlysales,
-
- Monthlysales asc;
+```sql
+SELECT SUM(total) AS totalsales, 
+       MONTH(RB_Project.dbo.Fact_Sales.New_Created_at) AS Monthlysales, 
+       YEAR(RB_Project.dbo.Fact_Sales.New_Created_at) AS Yearlysales
+FROM RB_Project.dbo.Fact_Sales
+GROUP BY 
+    MONTH(RB_Project.dbo.Fact_Sales.New_Created_at),
+    YEAR(RB_Project.dbo.Fact_Sales.New_Created_at)
+ORDER BY
+    Yearlysales,
+    Monthlysales ASC;
+```
 
  ![Totalsales by month and year](https://github.com/user-attachments/assets/a50cfa59-dbcb-4282-8e10-0582e0ddbb56)
 
