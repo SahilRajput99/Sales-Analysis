@@ -46,7 +46,7 @@ Description: Contains information related to customer orders, such as order ID a
 Description: Contains data about the shipping methods used in the sales transactions.
 
 ### SQL Queries:
-1. #### Total Sales Analysis
+ #### Total Sales Analysis
 
 #### Monthly sales
 
@@ -84,36 +84,123 @@ ORDER BY
  ![Totalsales by month and year](https://github.com/user-attachments/assets/a50cfa59-dbcb-4282-8e10-0582e0ddbb56)
 
  #### Calculate the month on month increase or decrease in sales & Difference in sales in % between the selected month and previous month
-
- SELECT 
-    
+```sql
+SELECT 
     YEAR(New_Created_at) AS SalesYear,
-    
     MONTH(New_Created_at) AS SalesMonth,
-    
     ROUND(SUM(Total), 0) AS TotalSales,
-    
     ((SUM(Total) - LAG(SUM(Total), 1) OVER (ORDER BY YEAR(New_Created_at), MONTH(New_Created_at))) 
-       
         / LAG(SUM(Total), 1) OVER (ORDER BY YEAR(New_Created_at), MONTH(New_Created_at))) * 100 
-        
         AS MOM_Increase_Percentage
-
 FROM 
-    
     RB_Project.dbo.Fact_Sales
-
 GROUP BY 
-    
     YEAR(New_Created_at), MONTH(New_Created_at)
-
 ORDER BY 
-    
     YEAR(New_Created_at), MONTH(New_Created_at);
+```
 
 ![MOM % sales](https://github.com/user-attachments/assets/5c13a89b-8da9-4b0a-9e84-47ec1a59080b)
 
+ ### Total Order Analysis
 
+#### Calculate the total number of orders for each respective month
+```sql
+SELECT COUNT(RB_Project.dbo.ConsolidatedOrders.OrderID) AS Total_Orders, MONTH(RB_Project.dbo.ConsolidatedOrders.CreatedAt) as Monthlyorders, YEAR(RB_Project.dbo.ConsolidatedOrders.CreatedAt) as yearlyorders
+from RB_Project.dbo.ConsolidatedOrders
+Group By
+		MONTH(RB_Project.dbo.ConsolidatedOrders.CreatedAt),
+		YEAR(RB_Project.dbo.ConsolidatedOrders.CreatedAt)
+Order By 
+		yearlyorders,
+		Monthlyorders;
+```
+![No  of Orders by Month](https://github.com/user-attachments/assets/2c62c080-ed7f-4a0a-9b63-e2ec7c6f2550)
 
+#### Determine the month on month increase or decrease in number of orders and calculate the difference in the number of orders between the selected month and the previous month
+```sql
+SELECT
+    MONTH(RB_Project.dbo.ConsolidatedOrders.CreatedAt) AS MonthlyOrders, 
+    YEAR(RB_Project.dbo.ConsolidatedOrders.CreatedAt) AS YearlyOrders,
+    Round(COUNT(RB_Project.dbo.ConsolidatedOrders.OrderID),0) AS Total_Orders,
+    (
+        (COUNT(OrderID) - LAG(COUNT(OrderID), 1) OVER (
+            ORDER BY YEAR(RB_Project.dbo.ConsolidatedOrders.CreatedAt), 
+                     MONTH(RB_Project.dbo.ConsolidatedOrders.CreatedAt)
+        )) 
+        / LAG(COUNT(OrderID), 1) OVER (
+            ORDER BY YEAR(RB_Project.dbo.ConsolidatedOrders.CreatedAt), 
+                     MONTH(RB_Project.dbo.ConsolidatedOrders.CreatedAt)
+        )
+    ) * 100 AS MOM_Percentage
+FROM 
+    RB_Project.dbo.ConsolidatedOrders
+GROUP BY 
+    YEAR(RB_Project.dbo.ConsolidatedOrders.CreatedAt), 
+    MONTH(RB_Project.dbo.ConsolidatedOrders.CreatedAt)
+ORDER BY 
+    YEAR(RB_Project.dbo.ConsolidatedOrders.CreatedAt), 
+    MONTH(RB_Project.dbo.ConsolidatedOrders.CreatedAt);
+```
 
+![MOM % Orders](https://github.com/user-attachments/assets/84031e3b-4b25-4913-afd3-4b53729b74c9)
+
+### Quantity Sold Analysis
+
+#### Calculate the total quantity sold for each respective month
+```sql
+SELECT SUM(Lineitem_quantity) as totalQuantitySold, Month(RB_Project.dbo.Fact_Sales.New_Created_at) as Monthlyquantitysold, Year(RB_Project.dbo.Fact_Sales.New_Created_at) as Yearlyquantitysold
+ from RB_Project.dbo.Fact_Sales
+ Group By 
+ Month(RB_Project.dbo.Fact_Sales.New_Created_at),
+ Year(RB_Project.dbo.Fact_Sales.New_Created_at)
+ Order By
+ Yearlyquantitysold,
+ Monthlyquantitysold asc;
+```
+
+![Total Quantity sold](https://github.com/user-attachments/assets/c161e6e9-5f6f-441d-9f77-edd8079e04f8)
+ 
+#### Determine the month on month increase or decrease in number of orders and calculate the difference in the number of orders between the selected month and the previous month
+
+```sql
+SELECT
+    MONTH(RB_Project.dbo.Fact_Sales.New_Created_at) AS MonthlyQuantitySold, 
+    YEAR(RB_Project.dbo.Fact_Sales.New_Created_at) AS YearlyQuantitySold,
+    SUM(RB_Project.dbo.Fact_Sales.Lineitem_quantity) AS Total_Quantity_Sold,
+    CASE 
+        WHEN LAG(SUM(RB_Project.dbo.Fact_Sales.Lineitem_quantity)) 
+             OVER (ORDER BY YEAR(RB_Project.dbo.Fact_Sales.New_Created_at), 
+                               MONTH(RB_Project.dbo.Fact_Sales.New_Created_at)) IS NULL 
+        THEN NULL 
+        ELSE 
+            (SUM(RB_Project.dbo.Fact_Sales.Lineitem_quantity) 
+            - LAG(SUM(RB_Project.dbo.Fact_Sales.Lineitem_quantity)) 
+              OVER (ORDER BY YEAR(RB_Project.dbo.Fact_Sales.New_Created_at), 
+                                MONTH(RB_Project.dbo.Fact_Sales.New_Created_at))
+            ) 
+            / LAG(SUM(RB_Project.dbo.Fact_Sales.Lineitem_quantity)) 
+              OVER (ORDER BY YEAR(RB_Project.dbo.Fact_Sales.New_Created_at), 
+                                MONTH(RB_Project.dbo.Fact_Sales.New_Created_at)) * 100
+    END AS MOM_Percentage
+FROM 
+    RB_Project.dbo.Fact_Sales
+GROUP BY 
+    YEAR(RB_Project.dbo.Fact_Sales.New_Created_at), 
+    MONTH(RB_Project.dbo.Fact_Sales.New_Created_at)
+ORDER BY 
+    YEAR(RB_Project.dbo.Fact_Sales.New_Created_at), 
+    MONTH(RB_Project.dbo.Fact_Sales.New_Created_at);
+```
+
+![MOM quanities sold](https://github.com/user-attachments/assets/0c9a54cc-ea6c-4a66-8663-f115a84973aa)
+
+### Detailed Metrics i,e.,(Sales, Qty Sold, Orders) of any specific date
+
+SELECT SUM(Total) as Totalsales,
+	SUM(Lineitem_quantity) as Total_Qty_Sold,
+		count(distinct Name) as Totalorders
+	From RB_Project.dbo.Fact_Sales
+Where
+Cast(New_Created_at as Date) = '2023-08-18';
 
