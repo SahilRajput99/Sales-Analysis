@@ -50,11 +50,11 @@ Description: Contains data about the shipping methods used in the sales transact
 
 #### Monthly sales
 
+```sql
 SELECT SUM(Total) AS TotalSales
 FROM RB_Project.dbo.Fact_Sales
 GROUP BY MONTH(RB_Project.dbo.Fact_Sales.New_Created_at);
-
-
+```
 
 ![Monthly_Sales](https://github.com/user-attachments/assets/aba4c462-0e46-4745-be39-ec3a7739d53f)
 
